@@ -1,0 +1,91 @@
+bmscecse@bmscecse-HP-Elite-Tower-600-G9-Desktop-PC:~$ cqlsh
+Connected to Test Cluster at 127.0.0.1:9042
+[cqlsh 6.0.0 | Cassandra 4.0.5 | CQL spec 3.4.5 | Native protocol v5]
+Use HELP for help.
+cqlsh> CREATE KEYSPACE Employee
+   ... WITH replication = {
+   ...   'class': 'SimpleStrategy',
+   ...   'replication_factor': 1
+   ... };
+
+
+Connected to Test Cluster at 127.0.0.1:9042
+[cqlsh 6.0.0 | Cassandra 4.0.5 | CQL spec 3.4.5 | Native protocol v5]
+Use HELP for help.
+cqlsh> use Employe;
+cqlsh:employe> CREATE TABLE Employee_Info (
+           ...     Emp_Id int PRIMARY KEY,
+           ...     Emp_Name text,
+           ...     Designation text,
+           ...     Date_of_Joining date,
+           ...     Salary int,
+           ...     Dept_Name text
+           ... );
+cqlsh:employe> DESCRIBE TABLE Employee_Info;
+
+CREATE TABLE employe.employee_info (
+    emp_id int PRIMARY KEY,
+    date_of_joining date,
+    dept_name text,
+    designation text,
+    emp_name text,
+    salary int
+) WITH additional_write_policy = '99p'
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND cdc = false
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND crc_check_chance = 1.0
+    AND default_time_to_live = 0
+    AND extensions = {}
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair = 'BLOCKING'
+    AND speculative_retry = '99p';
+cqlsh:employe> BEGIN BATCH
+           ... INSERT INTO Employee_Info (Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name)
+           ... VALUES (121, 'Rahul', 'Developer', '2021-01-15', 50000, 'IT');
+           ... 
+           ... INSERT INTO Employee_Info (Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name)
+           ... VALUES (122, 'Anita', 'Manager', '2020-03-20', 60000, 'HR');
+           ... 
+           ... INSERT INTO Employee_Info (Emp_Id, Emp_Name, Designation, Date_of_Joining, Salary, Dept_Name)
+           ... VALUES (123, 'Suresh', 'Tester', '2022-06-10', 45000, 'QA');
+           ... APPLY BATCH;
+cqlsh:employe> SELECT * FROM Employee_Info;
+
+ emp_id | date_of_joining | dept_name | designation | emp_name | salary
+--------+-----------------+-----------+-------------+----------+--------
+    123 |      2022-06-10 |        QA |      Tester |   Suresh |  45000
+    122 |      2020-03-20 |        HR |     Manager |    Anita |  60000
+    121 |      2021-01-15 |        IT |   Developer |    Rahul |  50000
+
+(3 rows)
+cqlsh:employe> UPDATE Employee_Info
+           ... SET Emp_Name = 'Rahul Sharma',
+           ...     Dept_Name = 'Development'
+           ... WHERE Emp_Id = 121;
+cqlsh:employe> SELECT * FROM Employee_Info WHERE Emp_Id = 121;
+
+ emp_id | date_of_joining | dept_name   | designation | emp_name     | salary
+--------+-----------------+-------------+-------------+--------------+--------
+    121 |      2021-01-15 | Development |   Developer | Rahul Sharma |  50000
+
+(1 rows)
+cqlsh:employe> SELECT * FROM Employee_Info ORDER BY Salary;
+InvalidRequest: Error from server: code=2200 [Invalid query] message="ORDER BY is only supported when the partition key is restricted by an EQ or an IN."
+cqlsh:employe> ALTER TABLE Employee_Info
+           ... ADD Projects set<text>;
+cqlsh:employe> UPDATE Employee_Info
+           ... SET Projects = {'Payroll System', 'Employee Portal'}
+           ... WHERE Emp_Id = 121;
+cqlsh:employe> SELECT Emp_Id, Emp_Name, Projects FROM Employee_Info WHERE Emp_Id = 121;
+
+ emp_id | emp_name     | projects
+--------+--------------+---------------------------------------
+    121 | Rahul Sharma | {'Employee Portal', 'Payroll System'}
+
